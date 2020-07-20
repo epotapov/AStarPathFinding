@@ -18,6 +18,7 @@ public class Main extends Application {
     Label clearIndicator;
     double side = 25;
     int sideInt = 25;
+    int delay = 10;
     public Cell[][] grid;
     int gridWidth;
     int gridHeight;
@@ -82,8 +83,14 @@ public class Main extends Application {
                     startGrid();
                     break;
                 case SPACE:
-                    if(node1Exists && node2Exists)
-                        Algo();
+                    if(node1Exists && node2Exists) {
+                        Runnable r = new Runnable() {
+                            public void run() {
+                                Algo();
+                            }
+                        };
+                        new Thread(r).start();
+                    }
                     System.out.println("Insert Algorithm");
                     break;
             }
@@ -149,6 +156,9 @@ public class Main extends Application {
 
     void pathCreation(Cell Current) {
         while(!Current.equals(grid[startNode.x][startNode.y])) {
+            try{
+                Thread.sleep(delay);
+            } catch (Exception e) {}
             Current.setFill(Color.PURPLE);
             Current = Current.parent;
         }
@@ -157,18 +167,24 @@ public class Main extends Application {
 
     boolean Algo() {
         borderNodes();
+        int count = 0;
         grid[startNode.x][startNode.y].gCost = 0;
         grid[startNode.x][startNode.y].fCost = H(startNode, endNode);
+        grid[startNode.x][startNode.y].setCount(count);
         PriorityQueue<Cell> openSet = new PriorityQueue<Cell>(new Comp());
         openSet.add(grid[startNode.x][startNode.y]);
         while (!openSet.isEmpty()) {
             Cell current = openSet.peek();
-            current.setFill(Color.RED);
             openSet.remove(current);
             if(current.equals(grid[endNode.x][endNode.y])) {
                 pathCreation(current);
                 return true;
             }
+            try{
+                Thread.sleep(delay / 2);
+            } catch (Exception e) {}
+            if(!current.equals(grid[startNode.x][startNode.y]))
+                current.setFill(Color.RED);
             for (int i = 0; i < current.Surrounding.size(); i++) {
                 int tempG = current.gCost + 1;
                 if(tempG < current.Surrounding.get(i).gCost) {
@@ -176,7 +192,12 @@ public class Main extends Application {
                     current.Surrounding.get(i).gCost = tempG;
                     current.Surrounding.get(i).fCost = tempG + H(current.Surrounding.get(i).location, endNode);
                     if (!openSet.contains(current.Surrounding.get(i))) {
+                        count++;
+                        current.Surrounding.get(i).setCount(count);
                         openSet.add(current.Surrounding.get(i));
+                        try{
+                            Thread.sleep(delay / 2);
+                        } catch (Exception e) {}
                         current.Surrounding.get(i).setFill(Color.GREEN);
                     }
                 }
@@ -188,7 +209,12 @@ public class Main extends Application {
     class Comp implements Comparator<Cell> {
         public int compare(Cell c1, Cell c2) {
             if(c1.fCost == c2.fCost)
-                return 0;
+                if(c1.count == c2.count)
+                    return 0;
+                else if(c1.count > c2.count)
+                    return 1;
+                else
+                    return -1;
             else if(c1.fCost > c2.fCost)
                 return 1;
             else
@@ -200,14 +226,14 @@ public class Main extends Application {
         for(int i = 0; i < grid.length; i++) {
             for(int j = 0; j < grid[i].length; j++) {
                 ArrayList<Cell> border = new ArrayList<Cell>();
-                if(i != 0 && !grid[i - 1][j].getFill().equals(Color.BLACK))
-                    border.add(grid[i - 1][j]);
                 if(i != grid.length - 1 && !grid[i + 1][j].getFill().equals(Color.BLACK))
                     border.add(grid[i + 1][j]);
-                if(j != 0 && !grid[i][j - 1].getFill().equals(Color.BLACK))
-                    border.add(grid[i][j - 1]);
+                if(i != 0 && !grid[i - 1][j].getFill().equals(Color.BLACK))
+                    border.add(grid[i - 1][j]);
                 if(j != grid[i].length - 1 && !grid[i][j + 1].getFill().equals(Color.BLACK))
                     border.add(grid[i][j+ 1]);
+                if(j != 0 && !grid[i][j - 1].getFill().equals(Color.BLACK))
+                    border.add(grid[i][j - 1]);
                 grid[i][j].setNeighbors(border);
             }
         }

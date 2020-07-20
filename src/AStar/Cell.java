@@ -13,7 +13,7 @@ public class Cell extends Rectangle {
     ArrayList<Cell> Surrounding;
     Point location;
     int gCost;
-    int hCost;
+    int count;
     int fCost;
 
     void start() {
@@ -32,6 +32,10 @@ public class Cell extends Rectangle {
         gCost = Integer.MAX_VALUE;
         fCost = Integer.MAX_VALUE;
         location = new Point(i, j);
+    }
+
+    void setCount(int c) {
+        count = c;
     }
 
     void setNeighbors(ArrayList<Cell> c) {
