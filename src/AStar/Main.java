@@ -1,10 +1,12 @@
 package AStar;
 
 import javafx.application.Application;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.paint.Color;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 
 import java.awt.*;
@@ -96,12 +98,12 @@ public class Main extends Application {
             }
         });
         primaryStage.widthProperty().addListener((obs, oldVal, newVal) -> {
-            gridWidth = (int)((mainScene.getWidth() + side - 1)/ side);
+            gridWidth = (int)(primaryStage.getWidth() / side);
             grid = new Cell[gridWidth][gridHeight];
             startGrid();
         });
-        primaryStage.heightProperty().addListener((obs, oldVal, newVal) -> {
-            gridHeight = (int)((mainScene.getHeight() + side - 1)/ side);
+        mainScene.heightProperty().addListener((obs, oldVal, newVal) -> {
+            gridHeight = (int)(primaryStage.getHeight() / side);
             grid = new Cell[gridWidth][gridHeight];
             startGrid();
         });
