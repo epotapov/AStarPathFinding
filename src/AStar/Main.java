@@ -96,12 +96,12 @@ public class Main extends Application {
             }
         });
         primaryStage.widthProperty().addListener((obs, oldVal, newVal) -> {
-            gridWidth = (int)(primaryStage.getWidth() / side);
+            gridWidth = (int)((mainScene.getWidth() + side - 1)/ side);
             grid = new Cell[gridWidth][gridHeight];
             startGrid();
         });
         primaryStage.heightProperty().addListener((obs, oldVal, newVal) -> {
-            gridHeight = (int)(primaryStage.getHeight() / side);
+            gridHeight = (int)((mainScene.getHeight() + side - 1)/ side);
             grid = new Cell[gridWidth][gridHeight];
             startGrid();
         });
