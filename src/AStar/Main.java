@@ -1,7 +1,6 @@
 package AStar;
 
 import javafx.application.Application;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
@@ -11,7 +10,6 @@ import javafx.stage.Stage;
 
 import java.awt.*;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.PriorityQueue;
 
 public class Main extends Application {
@@ -27,6 +25,8 @@ public class Main extends Application {
     boolean clear;
     boolean node1Exists;
     boolean node2Exists;
+    boolean algoRun;
+    boolean dijkstra = false;
     Point startNode;
     Point endNode;
 
@@ -54,7 +54,9 @@ public class Main extends Application {
         mainGroup.setOnMousePressed(e -> {
             switch (e.getButton()) {
                 case PRIMARY:
-                    drawWall(e.getX(), e.getY());
+                    if(!algoRun) {
+                        drawWall(e.getX(), e.getY());
+                    }
                     break;
                 case SECONDARY:
                     drawNodes(e.getX(), e.getY());
@@ -64,7 +66,9 @@ public class Main extends Application {
         mainGroup.setOnMouseDragged(e -> {
             switch (e.getButton()) {
                 case PRIMARY:
-                    drawWall(e.getX(), e.getY());
+                    if(!algoRun) {
+                        drawWall(e.getX(), e.getY());
+                    }
                     break;
                 case SECONDARY:
                     break;
@@ -73,27 +77,44 @@ public class Main extends Application {
         mainGroup.setOnKeyPressed(e -> {
             switch (e.getCode()) {
                 case C:
-                    if(!clear) {
-                        clearIndicator.setVisible(true);
-                        clear = true;
-                    } else {
-                        clearIndicator.setVisible(false);
-                        clear = false;
+                    if(!algoRun) {
+                        if (!clear) {
+                            clearIndicator.setVisible(true);
+                            clear = true;
+                        } else {
+                            clearIndicator.setVisible(false);
+                            clear = false;
+                        }
                     }
                     break;
                 case X:
                     startGrid();
                     break;
-                case SPACE:
-                    if(node1Exists && node2Exists) {
-                        Runnable r = new Runnable() {
-                            public void run() {
-                                Algo();
-                            }
-                        };
-                        new Thread(r).start();
+                case D:
+                    if(!algoRun) {
+                        if (!dijkstra) {
+                            dijkstra = true;
+                            System.out.println("Dijkstra On");
+                        } else {
+                            dijkstra = false;
+                            System.out.println("Dijkstra Off");
+                        }
                     }
-                    System.out.println("Insert Algorithm");
+                    break;
+                case SPACE:
+                    if(!algoRun) {
+                        if (node1Exists && node2Exists) {
+                            Runnable r = new Runnable() {
+                                public void run() {
+                                    if(!dijkstra)
+                                        Algo();
+                                    else
+                                        DijkstraAlgo();
+                                }
+                            };
+                            new Thread(r).start();
+                        }
+                    }
                     break;
             }
         });
@@ -115,6 +136,7 @@ public class Main extends Application {
         mainGroup.getChildren().clear();
         node1Exists = false;
         node2Exists = false;
+        algoRun = false;
         for(int i = 0; i < grid.length; i++) {
             for(int j = 0; j < grid[i].length; j++) {
                 grid[i][j] = new Cell(i * side, j * side, side);
@@ -168,6 +190,7 @@ public class Main extends Application {
     }
 
     boolean Algo() {
+        algoRun = true;
         borderNodes();
         int count = 0;
         grid[startNode.x][startNode.y].gCost = 0;
@@ -208,34 +231,82 @@ public class Main extends Application {
         return false;
     }
 
-    class Comp implements Comparator<Cell> {
-        public int compare(Cell c1, Cell c2) {
-            if(c1.fCost == c2.fCost)
-                if(c1.count == c2.count)
-                    return 0;
-                else if(c1.count > c2.count)
-                    return 1;
-                else
-                    return -1;
-            else if(c1.fCost > c2.fCost)
-                return 1;
-            else
-                return -1;
+    boolean DijkstraAlgo() {
+        algoRun = true;
+        borderNodes();
+        int count = 0;
+        grid[startNode.x][startNode.y].gCost = 0;
+        grid[startNode.x][startNode.y].setCount(count);
+        PriorityQueue<Cell> openSet = new PriorityQueue<Cell>(new CompD());
+        openSet.add(grid[startNode.x][startNode.y]);
+        while (!openSet.isEmpty()) {
+            Cell current = openSet.peek();
+            openSet.remove(current);
+            if(current.equals(grid[endNode.x][endNode.y])) {
+                pathCreation(current);
+                return true;
+            }
+            try{
+                Thread.sleep(delay / 2);
+            } catch (Exception e) {}
+            if(!current.equals(grid[startNode.x][startNode.y]))
+                current.setFill(Color.RED);
+            for (int i = 0; i < current.Surrounding.size(); i++) {
+                int tempG = current.gCost + 1;
+                if(tempG < current.Surrounding.get(i).gCost) {
+                    current.Surrounding.get(i).setParent(current);
+                    current.Surrounding.get(i).gCost = tempG;
+                    if (!openSet.contains(current.Surrounding.get(i))) {
+                        count++;
+                        current.Surrounding.get(i).setCount(count);
+                        openSet.add(current.Surrounding.get(i));
+                        try{
+                            Thread.sleep(delay / 2);
+                        } catch (Exception e) {}
+                        current.Surrounding.get(i).setFill(Color.GREEN);
+                    }
+                }
+            }
         }
+        return false;
     }
 
     void borderNodes() {
         for(int i = 0; i < grid.length; i++) {
             for(int j = 0; j < grid[i].length; j++) {
                 ArrayList<Cell> border = new ArrayList<Cell>();
-                if(i != grid.length - 1 && !grid[i + 1][j].getFill().equals(Color.BLACK))
-                    border.add(grid[i + 1][j]);
-                if(i != 0 && !grid[i - 1][j].getFill().equals(Color.BLACK))
+                boolean up = true;
+                boolean down = true;
+                boolean right = true;
+                boolean left = true;
+                if(i != 0 && !grid[i - 1][j].getFill().equals(Color.BLACK)) {
                     border.add(grid[i - 1][j]);
-                if(j != grid[i].length - 1 && !grid[i][j + 1].getFill().equals(Color.BLACK))
-                    border.add(grid[i][j+ 1]);
-                if(j != 0 && !grid[i][j - 1].getFill().equals(Color.BLACK))
+                    up = false;
+                }
+                if(i != grid.length - 1 && !grid[i + 1][j].getFill().equals(Color.BLACK)) {
+                    border.add(grid[i + 1][j]);
+                    down = false;
+                }
+                if(j != grid[i].length - 1 && !grid[i][j + 1].getFill().equals(Color.BLACK)) {
+                    border.add(grid[i][j + 1]);
+                    right = false;
+                }
+                if(j != 0 && !grid[i][j - 1].getFill().equals(Color.BLACK)) {
                     border.add(grid[i][j - 1]);
+                    left = false;
+                }
+                if(i != 0 && j != 0 && !grid[i - 1][j - 1].getFill().equals(Color.BLACK) && !(up && left)) {
+                    border.add(grid[i - 1][j - 1]);
+                }
+                if(i != 0 && j != grid[i].length - 1 && !grid[i - 1][j + 1].getFill().equals(Color.BLACK) && !(up && right)) {
+                    border.add(grid[i - 1][j + 1]);
+                }
+                if(i != grid.length - 1 && j != 0 && !grid[i + 1][j - 1].getFill().equals(Color.BLACK) && !(down && left)) {
+                    border.add(grid[i + 1][j - 1]);
+                }
+                if(i != grid.length - 1 && j != grid[i].length - 1 && !grid[i + 1][j + 1].getFill().equals(Color.BLACK) && !(down && right)) {
+                    border.add(grid[i + 1][j + 1]);
+                }
                 grid[i][j].setNeighbors(border);
             }
         }
