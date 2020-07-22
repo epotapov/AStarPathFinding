@@ -4,8 +4,10 @@ import javafx.application.Application;
 import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.stage.Screen;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.awt.*;
@@ -15,10 +17,17 @@ import java.util.PriorityQueue;
 public class Main extends Application {
     Scene mainScene;
     Group mainGroup;
+    HBox indicatorBar;
     Label clearIndicator;
+    Rectangle clearBackground;
+    StackPane clearPane;
+    Label dijkstraIndicator;
+    Rectangle dijkstraBackground;
+    StackPane dijkstraPane;
     double side = 25;
-    int sideInt = 25;
     int delay = 10;
+    double clearWidth = 49;
+    double clearHeight = 25;
     public Cell[][] grid;
     int gridWidth;
     int gridHeight;
@@ -26,14 +35,13 @@ public class Main extends Application {
     boolean node1Exists;
     boolean node2Exists;
     boolean algoRun;
-    boolean dijkstra = false;
+    boolean dijkstra;
     Point startNode;
     Point endNode;
 
     public static void main(String[] args) {
         launch(args);
     }
-
 
     @Override
     public void start(Stage primaryStage) {
@@ -45,12 +53,42 @@ public class Main extends Application {
         gridHeight = 26;
         grid = new Cell[gridWidth][gridHeight];
         clear = false;
+        dijkstra = false;
         mainScene = new Scene(mainGroup);
-        clearIndicator = new Label("Clear on");
-        clearIndicator.setTextFill(Color.PURPLE);
-        clearIndicator.setVisible(false);
+        indicatorSetup();
         startGrid();
         mainGroup.requestFocus();
+        addControl(primaryStage);
+        primaryStage.setScene(mainScene);
+        primaryStage.show();
+    }
+
+    void indicatorSetup() {
+        indicatorBar = new HBox();
+        clearPane = new StackPane();
+        clearPane.setPrefSize(clearWidth, clearHeight);
+        clearIndicator = new Label("Clear on");
+        clearIndicator.setPrefSize(clearWidth, clearHeight);
+        clearIndicator.setStyle("-fx-font-weight: bold");
+        clearBackground = new Rectangle(0,0,clearWidth, clearHeight);
+        clearBackground.setFill(Color.YELLOW);
+        clearBackground.setStroke(Color.BLACK);
+        clearPane.getChildren().addAll(clearBackground, clearIndicator);
+        clearPane.setVisible(false);
+        dijkstraPane = new StackPane();
+        dijkstraPane.setPrefSize(clearWidth, clearHeight);
+        dijkstraIndicator = new Label("Dijkstra");
+        dijkstraIndicator.setPrefSize(clearWidth, clearHeight);
+        dijkstraIndicator.setStyle("-fx-font-weight: bold");
+        dijkstraBackground = new Rectangle(clearWidth, 0, clearWidth,clearHeight);
+        dijkstraBackground.setFill(Color.web("#ff6ef5"));
+        dijkstraBackground.setStroke(Color.BLACK);
+        dijkstraPane.setVisible(false);
+        dijkstraPane.getChildren().addAll(dijkstraBackground,dijkstraIndicator);
+        indicatorBar.getChildren().addAll(clearPane, dijkstraPane);
+    }
+
+    void addControl(Stage primaryStage) {
         mainGroup.setOnMousePressed(e -> {
             switch (e.getButton()) {
                 case PRIMARY:
@@ -79,10 +117,10 @@ public class Main extends Application {
                 case C:
                     if(!algoRun) {
                         if (!clear) {
-                            clearIndicator.setVisible(true);
+                            clearPane.setVisible(true);
                             clear = true;
                         } else {
-                            clearIndicator.setVisible(false);
+                            clearPane.setVisible(false);
                             clear = false;
                         }
                     }
@@ -93,24 +131,22 @@ public class Main extends Application {
                 case D:
                     if(!algoRun) {
                         if (!dijkstra) {
+                            dijkstraPane.setVisible(true);
                             dijkstra = true;
-                            System.out.println("Dijkstra On");
                         } else {
+                            dijkstraPane.setVisible(false);
                             dijkstra = false;
-                            System.out.println("Dijkstra Off");
                         }
                     }
                     break;
                 case SPACE:
                     if(!algoRun) {
                         if (node1Exists && node2Exists) {
-                            Runnable r = new Runnable() {
-                                public void run() {
-                                    if(!dijkstra)
-                                        Algo();
-                                    else
-                                        DijkstraAlgo();
-                                }
+                            Runnable r = () -> {
+                                if(!dijkstra)
+                                    Algo();
+                                else
+                                    DijkstraAlgo();
                             };
                             new Thread(r).start();
                         }
@@ -123,13 +159,11 @@ public class Main extends Application {
             grid = new Cell[gridWidth][gridHeight];
             startGrid();
         });
-        mainScene.heightProperty().addListener((obs, oldVal, newVal) -> {
+        primaryStage.heightProperty().addListener((obs, oldVal, newVal) -> {
             gridHeight = (int)(primaryStage.getHeight() / side);
             grid = new Cell[gridWidth][gridHeight];
             startGrid();
         });
-        primaryStage.setScene(mainScene);
-        primaryStage.show();
     }
 
     void startGrid() {
@@ -146,7 +180,7 @@ public class Main extends Application {
                 mainGroup.getChildren().add(grid[i][j]);
             }
         }
-        mainGroup.getChildren().add(clearIndicator);
+        mainGroup.getChildren().add(indicatorBar);
     }
 
     void drawWall(double x, double y) {
@@ -182,7 +216,9 @@ public class Main extends Application {
         while(!Current.equals(grid[startNode.x][startNode.y])) {
             try{
                 Thread.sleep(delay);
-            } catch (Exception e) {}
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             Current.setFill(Color.PURPLE);
             Current = Current.parent;
         }
@@ -191,7 +227,6 @@ public class Main extends Application {
 
     boolean Algo() {
         algoRun = true;
-        borderNodes();
         int count = 0;
         grid[startNode.x][startNode.y].gCost = 0;
         grid[startNode.x][startNode.y].fCost = H(startNode, endNode);
@@ -201,6 +236,7 @@ public class Main extends Application {
         while (!openSet.isEmpty()) {
             Cell current = openSet.peek();
             openSet.remove(current);
+            borderNodes(current.location.x, current.location.y);
             if(current.equals(grid[endNode.x][endNode.y])) {
                 pathCreation(current);
                 return true;
@@ -233,7 +269,6 @@ public class Main extends Application {
 
     boolean DijkstraAlgo() {
         algoRun = true;
-        borderNodes();
         int count = 0;
         grid[startNode.x][startNode.y].gCost = 0;
         grid[startNode.x][startNode.y].setCount(count);
@@ -242,6 +277,7 @@ public class Main extends Application {
         while (!openSet.isEmpty()) {
             Cell current = openSet.peek();
             openSet.remove(current);
+            borderNodes(current.location.x, current.location.y);
             if(current.equals(grid[endNode.x][endNode.y])) {
                 pathCreation(current);
                 return true;
@@ -262,7 +298,9 @@ public class Main extends Application {
                         openSet.add(current.Surrounding.get(i));
                         try{
                             Thread.sleep(delay / 2);
-                        } catch (Exception e) {}
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         current.Surrounding.get(i).setFill(Color.GREEN);
                     }
                 }
@@ -271,46 +309,41 @@ public class Main extends Application {
         return false;
     }
 
-    void borderNodes() {
-        for(int i = 0; i < grid.length; i++) {
-            for(int j = 0; j < grid[i].length; j++) {
-                ArrayList<Cell> border = new ArrayList<Cell>();
-                boolean up = true;
-                boolean down = true;
-                boolean right = true;
-                boolean left = true;
-                if(i != 0 && !grid[i - 1][j].getFill().equals(Color.BLACK)) {
-                    border.add(grid[i - 1][j]);
-                    up = false;
-                }
-                if(i != grid.length - 1 && !grid[i + 1][j].getFill().equals(Color.BLACK)) {
-                    border.add(grid[i + 1][j]);
-                    down = false;
-                }
-                if(j != grid[i].length - 1 && !grid[i][j + 1].getFill().equals(Color.BLACK)) {
-                    border.add(grid[i][j + 1]);
-                    right = false;
-                }
-                if(j != 0 && !grid[i][j - 1].getFill().equals(Color.BLACK)) {
-                    border.add(grid[i][j - 1]);
-                    left = false;
-                }
-                if(i != 0 && j != 0 && !grid[i - 1][j - 1].getFill().equals(Color.BLACK) && !(up && left)) {
-                    border.add(grid[i - 1][j - 1]);
-                }
-                if(i != 0 && j != grid[i].length - 1 && !grid[i - 1][j + 1].getFill().equals(Color.BLACK) && !(up && right)) {
-                    border.add(grid[i - 1][j + 1]);
-                }
-                if(i != grid.length - 1 && j != 0 && !grid[i + 1][j - 1].getFill().equals(Color.BLACK) && !(down && left)) {
-                    border.add(grid[i + 1][j - 1]);
-                }
-                if(i != grid.length - 1 && j != grid[i].length - 1 && !grid[i + 1][j + 1].getFill().equals(Color.BLACK) && !(down && right)) {
-                    border.add(grid[i + 1][j + 1]);
-                }
-                grid[i][j].setNeighbors(border);
-            }
+    void borderNodes(int i, int j) {
+        ArrayList<Cell> border = new ArrayList<Cell>();
+        boolean up = true;
+        boolean down = true;
+        boolean right = true;
+        boolean left = true;
+        if(i != 0 && !grid[i - 1][j].getFill().equals(Color.BLACK)) {
+            border.add(grid[i - 1][j]);
+            up = false;
         }
-
+        if(i != grid.length - 1 && !grid[i + 1][j].getFill().equals(Color.BLACK)) {
+            border.add(grid[i + 1][j]);
+            down = false;
+        }
+        if(j != grid[i].length - 1 && !grid[i][j + 1].getFill().equals(Color.BLACK)) {
+            border.add(grid[i][j + 1]);
+            right = false;
+        }
+        if(j != 0 && !grid[i][j - 1].getFill().equals(Color.BLACK)) {
+            border.add(grid[i][j - 1]);
+            left = false;
+        }
+        if(i != 0 && j != 0 && !grid[i - 1][j - 1].getFill().equals(Color.BLACK) && !(up && left)) {
+            border.add(grid[i - 1][j - 1]);
+        }
+        if(i != 0 && j != grid[i].length - 1 && !grid[i - 1][j + 1].getFill().equals(Color.BLACK) && !(up && right)) {
+            border.add(grid[i - 1][j + 1]);
+        }
+        if(i != grid.length - 1 && j != 0 && !grid[i + 1][j - 1].getFill().equals(Color.BLACK) && !(down && left)) {
+            border.add(grid[i + 1][j - 1]);
+        }
+        if(i != grid.length - 1 && j != grid[i].length - 1 && !grid[i + 1][j + 1].getFill().equals(Color.BLACK) && !(down && right)) {
+            border.add(grid[i + 1][j + 1]);
+        }
+        grid[i][j].setNeighbors(border);
     }
 
     int H(Point p1, Point p2) {
