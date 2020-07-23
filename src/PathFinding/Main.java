@@ -1,4 +1,4 @@
-package AStar;
+package PathFinding;
 
 import javafx.application.Application;
 import javafx.scene.Group;
@@ -27,7 +27,7 @@ public class Main extends Application {
     double side = 25;
     int delay = 10;
     double clearWidth = 49;
-    double clearHeight = 25;
+    double clearHeight = 24;
     public Cell[][] grid;
     int gridWidth;
     int gridHeight;
@@ -45,7 +45,7 @@ public class Main extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("A* PathFinding");
+        primaryStage.setTitle("A* PathFinding and More");
         primaryStage.setMinHeight(650);
         primaryStage.setMinWidth(1000);
         mainGroup = new Group();
@@ -199,7 +199,7 @@ public class Main extends Application {
         int j = (int)(y / side);
         if(i < 0 || i >= grid.length || j < 0 || j >= grid[i].length )
             return;
-        if(!node1Exists && !node2Exists) {
+        if((!node1Exists && !node2Exists) || (!node1Exists && node2Exists && !grid[i][j].endnode)) {
             grid[i][j].setFill(Color.BLUE);
             node1Exists = true;
             startNode = new Point(i, j);
@@ -209,6 +209,14 @@ public class Main extends Application {
             node2Exists = true;
             endNode = new Point(i, j);
             grid[i][j].end();
+        } else if (node1Exists && grid[i][j].startnode) {
+            grid[i][j].setFill(Color.WHITE);
+            node1Exists = false;
+            grid[i][j].setFalse();
+        } else if (node2Exists && grid[i][j].endnode) {
+            grid[i][j].setFill(Color.WHITE);
+            node2Exists = false;
+            grid[i][j].setFalse();
         }
     }
 
@@ -247,7 +255,11 @@ public class Main extends Application {
             if(!current.equals(grid[startNode.x][startNode.y]))
                 current.setFill(Color.RED);
             for (int i = 0; i < current.Surrounding.size(); i++) {
-                int tempG = current.gCost + 1;
+                double tempG;
+                if(current.Surrounding.get(i).diagonal)
+                    tempG = current.gCost + 1.4;
+                else
+                    tempG = current.gCost + 1;
                 if(tempG < current.Surrounding.get(i).gCost) {
                     current.Surrounding.get(i).setParent(current);
                     current.Surrounding.get(i).gCost = tempG;
@@ -288,7 +300,11 @@ public class Main extends Application {
             if(!current.equals(grid[startNode.x][startNode.y]))
                 current.setFill(Color.RED);
             for (int i = 0; i < current.Surrounding.size(); i++) {
-                int tempG = current.gCost + 1;
+                double tempG;
+                if(current.Surrounding.get(i).diagonal)
+                    tempG = current.gCost + 1.4;
+                else
+                    tempG = current.gCost + 1;
                 if(tempG < current.Surrounding.get(i).gCost) {
                     current.Surrounding.get(i).setParent(current);
                     current.Surrounding.get(i).gCost = tempG;
@@ -317,36 +333,44 @@ public class Main extends Application {
         boolean left = true;
         if(i != 0 && !grid[i - 1][j].getFill().equals(Color.BLACK)) {
             border.add(grid[i - 1][j]);
+            grid[i - 1][j].notDiagonal();
             up = false;
         }
         if(i != grid.length - 1 && !grid[i + 1][j].getFill().equals(Color.BLACK)) {
             border.add(grid[i + 1][j]);
+            grid[i + 1][j].notDiagonal();
             down = false;
         }
         if(j != grid[i].length - 1 && !grid[i][j + 1].getFill().equals(Color.BLACK)) {
             border.add(grid[i][j + 1]);
+            grid[i][j + 1].notDiagonal();
             right = false;
         }
         if(j != 0 && !grid[i][j - 1].getFill().equals(Color.BLACK)) {
             border.add(grid[i][j - 1]);
+            grid[i][j - 1].notDiagonal();
             left = false;
         }
         if(i != 0 && j != 0 && !grid[i - 1][j - 1].getFill().equals(Color.BLACK) && !(up && left)) {
+            grid[i - 1][j - 1].setDiagonal();
             border.add(grid[i - 1][j - 1]);
         }
         if(i != 0 && j != grid[i].length - 1 && !grid[i - 1][j + 1].getFill().equals(Color.BLACK) && !(up && right)) {
+            grid[i - 1][j + 1].setDiagonal();
             border.add(grid[i - 1][j + 1]);
         }
         if(i != grid.length - 1 && j != 0 && !grid[i + 1][j - 1].getFill().equals(Color.BLACK) && !(down && left)) {
+            grid[i + 1][j - 1].setDiagonal();
             border.add(grid[i + 1][j - 1]);
         }
         if(i != grid.length - 1 && j != grid[i].length - 1 && !grid[i + 1][j + 1].getFill().equals(Color.BLACK) && !(down && right)) {
+            grid[i + 1][j + 1].setDiagonal();
             border.add(grid[i + 1][j + 1]);
         }
         grid[i][j].setNeighbors(border);
     }
 
-    int H(Point p1, Point p2) {
-        return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y);
+    double H(Point p1, Point p2) {
+        return Math.abs((double)(p1.x - p2.x)) + Math.abs((double)(p1.y - p2.y));
     }
 }

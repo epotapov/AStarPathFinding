@@ -1,4 +1,4 @@
-package AStar;
+package PathFinding;
 
 import javafx.scene.shape.Rectangle;
 
@@ -7,14 +7,14 @@ import java.util.ArrayList;
 
 public class Cell extends Rectangle {
     boolean startnode = false;
-    boolean middlenode = false;
     boolean endnode = false;
+    boolean diagonal = false;
     Cell parent;
     ArrayList<Cell> Surrounding;
     Point location;
-    int gCost;
+    double gCost;
     int count;
-    int fCost;
+    double fCost;
 
     void start() {
         startnode = true;
@@ -26,11 +26,25 @@ public class Cell extends Rectangle {
         endnode = true;
     }
 
+    void setFalse() {
+        startnode = false;
+        endnode = false;
+    }
+
+    void setDiagonal() {
+        diagonal = true;
+    }
+
+    void notDiagonal() {
+        diagonal = false;
+    }
+
     void restartNode(int i, int j) {
         startnode = false;
         endnode = false;
-        gCost = Integer.MAX_VALUE;
-        fCost = Integer.MAX_VALUE;
+        diagonal = false;
+        gCost = Double.MAX_VALUE;
+        fCost = Double.MAX_VALUE;
         location = new Point(i, j);
     }
 
