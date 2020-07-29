@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="AStarPathfinding:jar">
+    <output-path>$PROJECT_DIR$</output-path>
+    <root id="archive" name="AStarPathfinding.jar">
+      <element id="module-output" name="AStarPathfinding" />
+    </root>
+  </artifact>
+</component>
